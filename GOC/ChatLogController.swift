@@ -199,11 +199,11 @@ class ChatLogController: UICollectionViewController,UITextFieldDelegate ,UIColle
         self.inputTextField.text=nil
         
         
-        let childUserMesaageRef = FIRDatabase.database().reference().child("user-messages").child(fromUId)
+        let childUserMesaageRef = FIRDatabase.database().reference().child("user-messages").child(fromUId).child(toID)
         let messageID = childRef.key
         childUserMesaageRef.updateChildValues([messageID:1])
         
-        let childRecipientMesaageRef = FIRDatabase.database().reference().child("user-messages").child(toID)
+        let childRecipientMesaageRef = FIRDatabase.database().reference().child("user-messages").child(toID).child(fromUId)
         childRecipientMesaageRef.updateChildValues([messageID:1])
         
         
@@ -212,11 +212,11 @@ class ChatLogController: UICollectionViewController,UITextFieldDelegate ,UIColle
     var messages = [Message]()
     func observeMessages(){
         
-      guard  let uid = FIRAuth.auth()?.currentUser?.uid else {
+      guard  let uid = FIRAuth.auth()?.currentUser?.uid , let userID  = user?.uid else {
             return;
         }
         
-    let ref = FIRDatabase.database().reference().child("user-messages").child(uid)
+    let ref = FIRDatabase.database().reference().child("user-messages").child(uid).child(userID)
         
         ref.observe(.childAdded, with: { (snapshot) in
             
@@ -230,14 +230,7 @@ class ChatLogController: UICollectionViewController,UITextFieldDelegate ,UIColle
                 
                 let message = Message()
                 message.setValuesForKeys(dictionary)
-                print(message.text!)
-                
-                print(message.recipientUid() ?? "")
-                print(self.user?.uid ?? "")
 
-             if message.recipientUid() == self.user?.uid {
-                
-                    
                     self.messages.append(message)
                     
                     DispatchQueue.main.async {
@@ -245,7 +238,7 @@ class ChatLogController: UICollectionViewController,UITextFieldDelegate ,UIColle
                         self.collectionView?.reloadData()
                     }
 
-                }
+               
                 
             }, withCancel: nil)
         }, withCancel: nil)

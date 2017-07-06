@@ -1,10 +1,17 @@
 
+struct MoveKeyboard {
+    static let KEYBOARD_ANIMATION_DURATION : CGFloat = 0.3
+    static let MINIMUM_SCROLL_FRACTION : CGFloat = 0.2;
+    static let MAXIMUM_SCROLL_FRACTION : CGFloat = 0.8;
+    static let PORTRAIT_KEYBOARD_HEIGHT : CGFloat = 216;
+    static let LANDSCAPE_KEYBOARD_HEIGHT : CGFloat = 162;
+}
 
 import UIKit
 import Firebase
 
-class LoginController: UIViewController {
-    
+class LoginController: UIViewController ,UITextFieldDelegate{
+    var animateDistance: CGFloat!
     var messagesController: MessagesController?
     var topConstarintToSuperView : NSLayoutConstraint?
     let superView: UIView = {
@@ -71,6 +78,7 @@ class LoginController: UIViewController {
     let nameTextField: UITextField = {
         let tf = UITextField()
         tf.placeholder = "Name"
+        tf.delegate=self as? UITextFieldDelegate
         tf.translatesAutoresizingMaskIntoConstraints = false
         return tf
     }()
@@ -85,6 +93,7 @@ class LoginController: UIViewController {
     let emailTextField: UITextField = {
         let tf = UITextField()
         tf.placeholder = "Email"
+
         tf.translatesAutoresizingMaskIntoConstraints = false
         return tf
     }()
@@ -99,6 +108,7 @@ class LoginController: UIViewController {
     let passwordTextField: UITextField = {
         let tf = UITextField()
         tf.placeholder = "Password"
+tf.isSecureTextEntry=true
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.isSecureTextEntry = true
         return tf
@@ -152,7 +162,11 @@ class LoginController: UIViewController {
         
         view.backgroundColor = UIColor(r: 61, g: 91, b: 151)
         self.view.addSubview(superView)
-        
+        nameTextField.delegate=self
+        passwordTextField.delegate=self
+
+        emailTextField.delegate=self
+
         superView.addSubview(inputsContainerView)
         superView.addSubview(loginRegisterButton)
         superView.addSubview(profileImageView)
@@ -164,8 +178,8 @@ class LoginController: UIViewController {
         setupLoginRegisterSegmentedControl()
         //  NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(YourClassName.methodOfReceivedNotification(_:)), name: notificationIdentifier, object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.handlleKeyboardShowNotification(notification: )), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.handlleKeyboardHideNotification(notification: )), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        //NotificationCenter.default.addObserver(self, selector: #selector(self.handlleKeyboardShowNotification(notification: )), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+        //NotificationCenter.default.addObserver(self, selector: #selector(self.handlleKeyboardHideNotification(notification: )), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
         
     }
     
@@ -177,18 +191,36 @@ class LoginController: UIViewController {
     func handlleKeyboardShowNotification(notification:Notification)
     {
         
-        if let KeyBoardRect =  (notification.userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
-            topConstarintToSuperView?.constant = -KeyBoardRect.height
+//        if let KeyBoardRect =  (notification.userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
+//            topConstarintToSuperView?.constant = -KeyBoardRect.height
+//        }
+//        
+//        
+//        // let time =  (notification.userInfo?[UIKeyboardAnimationDurationUserInfoKey].do
+//        
+//        UIView.animate(withDuration: 0.5, animations: {
+//            
+//            self.view.layoutIfNeeded()
+//        })
+//        
+        
+        if let userInfo = notification.userInfo {
+            let endFrame = (userInfo[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue
+            let duration:TimeInterval = (userInfo[UIKeyboardAnimationDurationUserInfoKey] as? NSNumber)?.doubleValue ?? 0
+            let animationCurveRawNSN = userInfo[UIKeyboardAnimationCurveUserInfoKey] as? NSNumber
+            let animationCurveRaw = animationCurveRawNSN?.uintValue ?? UIViewAnimationOptions.curveEaseInOut.rawValue
+            let animationCurve:UIViewAnimationOptions = UIViewAnimationOptions(rawValue: animationCurveRaw)
+//            if (endFrame?.origin.y)! >= UIScreen.main.bounds.size.height {
+//                self.topConstarintToSuperView?.constant = 0.0
+//            } else {
+//                self.topConstarintToSuperView?.constant = -(endFrame?.size.height)!
+//            }
+//            UIView.animate(withDuration: duration,
+//                           delay: TimeInterval(0),
+//                           options: animationCurve,
+//                           animations: { self.view.layoutIfNeeded() },
+//                           completion: nil)
         }
-        
-        
-        // let time =  (notification.userInfo?[UIKeyboardAnimationDurationUserInfoKey].do
-        
-        UIView.animate(withDuration: 0.5, animations: {
-            
-            self.view.layoutIfNeeded()
-        })
-        
         
     }
     
@@ -302,6 +334,86 @@ class LoginController: UIViewController {
     override var preferredStatusBarStyle : UIStatusBarStyle {
         return .lightContent
     }
+    
+    ////////
+    
+//    public func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool
+//    
+//    {
+//        animateViewMoving(up: true, moveValue: 100)
+//        return true
+//    }
+//  public func textFieldDidEndEditing(_ textField: UITextField)
+//  {
+//    animateViewMoving(up: false, moveValue: 100)
+// 
+//    }
+//    
+//    
+//    func animateViewMoving (up:Bool, moveValue :CGFloat){
+//        let movementDuration:TimeInterval = 0.3
+//        let movement:CGFloat = ( up ? -moveValue : moveValue)
+//        UIView.beginAnimations( "animateView", context: nil)
+//        UIView.setAnimationBeginsFromCurrentState(true)
+//        UIView.setAnimationDuration(movementDuration )
+//        self.view.frame = self.view.frame.offsetBy(dx: 0,  dy: movement)
+//        UIView.commitAnimations()
+//    }
+    
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        let textFieldRect : CGRect = self.view.window!.convert(textField.bounds, from: textField)
+        let viewRect : CGRect = self.view.window!.convert(self.view.bounds, from: self.view)
+        
+        let midline : CGFloat = textFieldRect.origin.y + 0.5 * textFieldRect.size.height
+        let numerator : CGFloat = midline - viewRect.origin.y - MoveKeyboard.MINIMUM_SCROLL_FRACTION * viewRect.size.height
+        let denominator : CGFloat = (MoveKeyboard.MAXIMUM_SCROLL_FRACTION - MoveKeyboard.MINIMUM_SCROLL_FRACTION) * viewRect.size.height
+        var heightFraction : CGFloat = numerator / denominator
+        
+        if heightFraction < 0.0 {
+            heightFraction = 0.0
+        } else if heightFraction > 1.0 {
+            heightFraction = 1.0
+        }
+        
+        let orientation : UIInterfaceOrientation = UIApplication.shared.statusBarOrientation
+        if (orientation == UIInterfaceOrientation.portrait || orientation == UIInterfaceOrientation.portraitUpsideDown) {
+            animateDistance = floor(MoveKeyboard.PORTRAIT_KEYBOARD_HEIGHT * heightFraction)
+        } else {
+            animateDistance = floor(MoveKeyboard.LANDSCAPE_KEYBOARD_HEIGHT * heightFraction)
+        }
+        
+        var viewFrame : CGRect = self.view.frame
+        viewFrame.origin.y -= animateDistance
+        
+        UIView.beginAnimations(nil, context: nil)
+        UIView.setAnimationBeginsFromCurrentState(true)
+        UIView.setAnimationDuration(TimeInterval(MoveKeyboard.KEYBOARD_ANIMATION_DURATION))
+        
+        self.view.frame = viewFrame
+        
+        UIView.commitAnimations()
+    }
+    
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        var viewFrame : CGRect = self.view.frame
+        viewFrame.origin.y += animateDistance
+        
+        UIView.beginAnimations(nil, context: nil)
+        UIView.setAnimationBeginsFromCurrentState(true)
+        
+        UIView.setAnimationDuration(TimeInterval(MoveKeyboard.KEYBOARD_ANIMATION_DURATION))
+        
+        self.view.frame = viewFrame
+        
+        UIView.commitAnimations()
+        
+    }
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
 }
 
 extension UIColor {
@@ -313,7 +425,7 @@ extension UIColor {
 }
 
 
-
+//////
 
 
 

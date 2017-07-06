@@ -30,64 +30,78 @@ class MessagesController: UITableViewController {
         let ref = FIRDatabase.database().reference().child("user-messages").child(userID!)
 
         ref.observe(.childAdded, with: { (snapshot) in
-            print(snapshot.key)
-
-            let messageInfoRef = FIRDatabase.database().reference().child("messages").child(snapshot.key)
-            messageInfoRef.observeSingleEvent(of: .value, with: { (snapshot) in
-               // print(snapshot2)
-
-                
-                if let dictionary = snapshot.value as? [String: AnyObject] {
-                    let message = Message()
-                    message.setValuesForKeys(dictionary)
-                    let reciepientID:String?
-                 
-                    reciepientID = message.recipientUid()
-                    
-                    
-//                    if let toUid = message.toUid
-//                    {
-                    
-                     
-                            self.messageDictionary[reciepientID!] = message
-                            
-                        //}
-                        
-                    //}
-                    
-                    self.messages = Array(self.messageDictionary.values) as! [Message]
-                    
-                    self.messages.sort(by: { (message1, message2) -> Bool in
-                        return (message1.timestamp?.intValue)!>(message2.timestamp?.intValue)!
-                    })
-                    //self.messages.append(message)
-                    
-                    //this will crash because of background thread, so lets use dispatch_async to fix
-                    
-                    self.timer?.invalidate()
-                 self.timer  = Timer.scheduledTimer(timeInterval: 0.4, target: self, selector: #selector(self.handleTimer), userInfo: nil, repeats: false)
-                    
-                   
-                    
-                   
-                }
-
-                
-                
-                
-            }, withCancel: nil)
-            
-           
+            //print(snapshot.key)
+             self.getMessageForSpecificUser(oppositionUserID: snapshot.key)
         }, withCancel: nil)
       
     }
+    
+    
+    
+    private func getMessageForSpecificUser (oppositionUserID:String)
+   {
+     let userID = FIRAuth.auth()?.currentUser?.uid
+    
+    
+    FIRDatabase.database().reference().child("user-messages").child(userID!).child(oppositionUserID).observe(.childAdded, with: { (snapshot) in
+        print(snapshot.key)
+        
+        
+        let messageInfoRef = FIRDatabase.database().reference().child("messages").child(snapshot.key)
+        messageInfoRef.observeSingleEvent(of: .value, with: { (snapshot) in
+            // print(snapshot2)
+            
+            
+            if let dictionary = snapshot.value as? [String: AnyObject] {
+                let message = Message()
+                message.setValuesForKeys(dictionary)
+                let reciepientID:String?
+                
+                reciepientID = message.recipientUid()
+                
+                self.messageDictionary[reciepientID!] = message
+                
+                
+                
+                self.messages = Array(self.messageDictionary.values) as! [Message]
+                
+                self.filterAndReloadData()
+                
+                
+                
+            }
+            
+            
+            
+            
+        }, withCancel: nil)
+        
+    }, withCancel: nil)
+    
+    
+    
+    }
     var timer :Timer?
+
+    private func filterAndReloadData(){
+        self.timer?.invalidate()
+        self.timer  = Timer.scheduledTimer(timeInterval: 0.4, target: self, selector: #selector(self.handleTimer), userInfo: nil, repeats: false)
+        
+
+    }
+    
+    
    func handleTimer()
    {
+    print("tesssst")
+    self.messages.sort(by: { (message1, message2) -> Bool in
+        return (message1.timestamp?.intValue)!>(message2.timestamp?.intValue)!
+    })
+
     DispatchQueue.main.async(execute: {
         self.tableView.reloadData()
         
-        print("tesssst")
+        
     })
     }
     
